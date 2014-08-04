@@ -8,6 +8,8 @@ enum TokenizeState {
     RParState,
     PlusState,
     MinusState,
+    StarState,
+    SlashState,
     ColonState,
     EqualState,
     ExclamState,
@@ -16,7 +18,7 @@ enum TokenizeState {
     EqEqState
 }
 
-pub fn tokenize(inputstring: &str) {
+pub fn tokenize<'a>(inputstring: &'a str) -> Vec<&'a str> {
     let mut current_state = StartState;
     let mut cur_token_start = 0u;
     let mut cur_token_end = 0u;
@@ -25,12 +27,17 @@ pub fn tokenize(inputstring: &str) {
         match current_state {
             StartState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_start = i;
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_start = i;
@@ -59,6 +66,18 @@ pub fn tokenize(inputstring: &str) {
                     '-' => {
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_start = i;
@@ -79,11 +98,20 @@ pub fn tokenize(inputstring: &str) {
             },
             NumberState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         continue;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -126,6 +154,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -152,11 +192,17 @@ pub fn tokenize(inputstring: &str) {
             },
             WordState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         continue;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        continue;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         continue;
@@ -196,6 +242,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -222,6 +280,12 @@ pub fn tokenize(inputstring: &str) {
             },
             SemicolonState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -229,7 +293,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -272,6 +339,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -298,6 +377,12 @@ pub fn tokenize(inputstring: &str) {
             },
             CommaState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -305,7 +390,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -348,6 +436,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -374,6 +474,12 @@ pub fn tokenize(inputstring: &str) {
             },
             LParState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -381,7 +487,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -424,6 +533,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -450,6 +571,12 @@ pub fn tokenize(inputstring: &str) {
             },
             RParState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -457,7 +584,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -500,6 +630,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -526,6 +668,12 @@ pub fn tokenize(inputstring: &str) {
             },
             PlusState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -533,7 +681,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -576,6 +727,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -602,6 +765,12 @@ pub fn tokenize(inputstring: &str) {
             },
             MinusState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -609,7 +778,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -652,6 +824,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -676,8 +860,14 @@ pub fn tokenize(inputstring: &str) {
                     }
                 }
             },
-            ColonState => {
+            StarState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -685,7 +875,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -728,6 +921,212 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
+                    },
+                    ':' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = ColonState;
+                    },
+                    '=' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = EqualState;
+                    },
+                    '!' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = ExclamState;
+                    },
+                    _ => {
+                        fail!("Encountered illegal character!");
+                    }
+                }
+    	    },
+    	    SlashState => {
+                match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
+                    '0'..'9' => {//Digit
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = NumberState;
+                    },
+                    'a'..'z' => {//lowercase alphabet
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
+                    },
+                    'A'..'Z' => {//uppercase alphabet
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
+                    },
+                    ';' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SemicolonState;
+                    },
+                    ',' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = CommaState;
+                    },
+                    '(' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = LParState;
+                    },
+                    ')' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = RParState;
+                    },
+                    '+' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = PlusState;
+                    },
+                    '-' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
+                    },
+                    ':' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = ColonState;
+                    },
+                    '=' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = EqualState;
+                    },
+                    '!' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = ExclamState;
+                    },
+                    _ => {
+                        fail!("Encountered illegal character!");
+                    }
+                }
+    	    },
+    	    ColonState => {
+                match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
+                    '0'..'9' => {//Digit
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = NumberState;
+                    },
+                    'a'..'z' => {//lowercase alphabet
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
+                    },
+                    'A'..'Z' => {//uppercase alphabet
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
+                    },
+                    ';' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SemicolonState;
+                    },
+                    ',' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = CommaState;
+                    },
+                    '(' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = LParState;
+                    },
+                    ')' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = RParState;
+                    },
+                    '+' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = PlusState;
+                    },
+                    '-' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -754,6 +1153,12 @@ pub fn tokenize(inputstring: &str) {
             },
             EqualState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -761,7 +1166,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -804,6 +1212,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -830,6 +1250,12 @@ pub fn tokenize(inputstring: &str) {
             },
             ExclamState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -837,7 +1263,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -880,6 +1309,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -906,6 +1347,12 @@ pub fn tokenize(inputstring: &str) {
             },
             NotEqState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -913,7 +1360,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -956,6 +1406,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -982,6 +1444,12 @@ pub fn tokenize(inputstring: &str) {
             },
             ColEqState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -989,7 +1457,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -1032,6 +1503,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -1058,6 +1541,12 @@ pub fn tokenize(inputstring: &str) {
             },
             EqEqState => {
                 match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
                     '0'..'9' => {//Digit
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
@@ -1065,7 +1554,10 @@ pub fn tokenize(inputstring: &str) {
                         current_state = NumberState;
                     },
                     'a'..'z' => {//lowercase alphabet
-                        fail!("Encountered illegal character!");
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
                     },
                     'A'..'Z' => {//uppercase alphabet
                         cur_token_end = i;
@@ -1108,6 +1600,18 @@ pub fn tokenize(inputstring: &str) {
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
                     },
                     ':' => {
                         cur_token_end = i;
@@ -1135,4 +1639,5 @@ pub fn tokenize(inputstring: &str) {
             // _ => fail!()
         }
     }
+    return tokens;
 }
