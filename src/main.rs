@@ -5,7 +5,7 @@ mod tokenizer;
 mod compiler;
 
 fn main() {
-    let path = Path::new("test2.tny");
+    let path = Path::new("test3.tny");
     let mut file = File::open(&path);
 
     let data = match file.read_to_end() {
