@@ -11,6 +11,7 @@ enum TokenizeState {
     StarState,
     SlashState,
     ColonState,
+    ColonEqualState,
     EqualState,
     ExclamState,
     NotEqState,
@@ -1135,6 +1136,100 @@ pub fn tokenize<'a>(inputstring: &'a str) -> Vec<&'a str> {
                         current_state = ColonState;
                     },
                     '=' => {
+                        current_state = ColonEqualState;
+                    },
+                    '!' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = ExclamState;
+                    },
+                    _ => {
+                        fail!("Encountered illegal character!");
+                    }
+                }
+            },
+            ColonEqualState => {
+                match c {
+                    ' ' | '\t' | '\n' => {//Whitespace
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StartState;
+                    },
+                    '0'..'9' => {//Digit
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = NumberState;
+                    },
+                    'a'..'z' => {//lowercase alphabet
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
+                    },
+                    'A'..'Z' => {//uppercase alphabet
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = WordState;
+                    },
+                    ';' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SemicolonState;
+                    },
+                    ',' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = CommaState;
+                    },
+                    '(' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = LParState;
+                    },
+                    ')' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = RParState;
+                    },
+                    '+' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = PlusState;
+                    },
+                    '-' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = MinusState;
+                    },
+                    '*' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = StarState;
+                    },
+                    '/' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = SlashState;
+                    },
+                    ':' => {
+                        cur_token_end = i;
+                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
+                        cur_token_start = i;
+                        current_state = ColonState;
+                    },
+                    '=' => {
                         cur_token_end = i;
                         tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
@@ -1150,7 +1245,7 @@ pub fn tokenize<'a>(inputstring: &'a str) -> Vec<&'a str> {
                         fail!("Encountered illegal character!");
                     }
                 }
-            },
+            }
             EqualState => {
                 match c {
                     ' ' | '\t' | '\n' => {//Whitespace
