@@ -1,39 +1,45 @@
 #[deriving(Show)]
+#[deriving(Clone)]
 enum AstNode<'a> {
     ProgramNode,
-    StmtListNode(&'a [AstNode<'a>]),
+    StmtListNode(Vec<AstNode<'a>>),
     StmtNode(Box<AstNode<'a>>, Box<AstNode<'a>>),
+    DeclarNode(&'a str, Box<AstNode<'a>>),
     IdentNode(&'a str),
     ExprNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>), // Operator, Left, Right
     NumberNode(&'a str),
     FailureNode
 }
 
-pub fn compile<'a>(tokens: Vec<&'a str>) -> AstNode {
+pub fn compile<'a>(tokens: Vec<&'a str>) -> AstNode<'a> {
     // for (index, token) in tokens.iter().enumerate() {
     //    println!("{}", token);
     // }
     parse_stmt_list(tokens.as_slice())
 }
 
+fn parse_block<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+
+}
+
 fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     let mut children = Vec::new();
-    let mut tokenstack = Vec::new();
-    for (index, token) in tokens.iter().enumerate().rev() {
+    let mut prev_end = 0u;
+    for (index, token) in tokens.iter().enumerate() {
         match *token {
             ";" => {
-                tokenstack.push(*token);
-                children.push(parse_stmt(tokenstack.as_slice()));
-                tokenstack = Vec::new();
+                children.push(parse_stmt(tokens.slice(prev_end, index+1)));
+                prev_end = index+1
             },
-            _ => tokenstack.push(*token)
+            _ => continue
         }
     }
     if children.len() > 0 {
-        return StmtListNode(children.as_slice());
+        return StmtListNode(children);
     }
     return FailureNode;
 }
+
 fn parse_stmt<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     for (index, token) in tokens.iter().enumerate().rev() {
         match *token {
@@ -41,17 +47,27 @@ fn parse_stmt<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                 for (innerindex, innertoken) in tokens.slice_to(index).iter().enumerate().rev() {
                     match *innertoken {
                         ":=" => return StmtNode(box parse_ident(tokens.slice_to(innerindex)),
-                                                box parse_expr(tokens.slice_from(index+1))
+                                                box parse_expr(tokens.slice(innerindex+1,
+                                                                            tokens.len()-1))
                                                 ),
                         _ => continue
                     }
                 }
-                return FailureNode;
+                return parse_decl(tokens);
             },
             _ => continue
         }
     }
     return FailureNode;
+}
+
+fn parse_decl<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    match tokens[0] {
+        "INT" => {
+            return DeclarNode("INT", box parse_ident(tokens.slice(1,2)));
+        },
+        _ => return FailureNode
+    }
 }
 
 fn parse_ident<'a>(tokens: &[&'a str]) -> AstNode<'a> {
@@ -70,7 +86,18 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     }
     for (index, token) in tokens.iter().enumerate().rev() {
     	match *token {
-            "*" | "/" | "+" | "-" => {
+            "+" | "-" => {
+                return ExprNode(*token, 
+                    box parse_expr(tokens.slice_to(index)),
+                    box parse_expr(tokens.slice_from(index+1))
+                    );
+            },
+            _ => continue
+        }
+    }
+    for (index, token) in tokens.iter().enumerate().rev() {
+    	match *token {
+            "*" | "/" => {
                 return ExprNode(*token, 
                     box parse_expr(tokens.slice_to(index)),
                     box parse_expr(tokens.slice_from(index+1))
