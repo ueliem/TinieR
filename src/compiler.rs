@@ -2,6 +2,7 @@
 #[deriving(Clone)]
 enum AstNode<'a> {
     ProgramNode,
+    BlockNode(Box<AstNode<'a>>),
     StmtListNode(Vec<AstNode<'a>>),
     StmtNode(Box<AstNode<'a>>, Box<AstNode<'a>>),
     DeclarNode(&'a str, Box<AstNode<'a>>),
@@ -19,7 +20,10 @@ pub fn compile<'a>(tokens: Vec<&'a str>) -> AstNode<'a> {
 }
 
 fn parse_block<'a>(tokens: &[&'a str]) -> AstNode<'a> {
-
+    if tokens[0] == "BEGIN" && tokens[tokens.len()-1] == "END" {
+        return BlockNode(box parse_stmt_list(tokens.slice(1,tokens.len()-1)));
+    }
+    return FailureNode;
 }
 
 fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
@@ -27,6 +31,31 @@ fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     let mut prev_end = 0u;
     for (index, token) in tokens.iter().enumerate() {
         match *token {
+            "BEGIN" => {
+                for (innerindex, innertoken) in tokens.slice_from(index).iter().enumerate() {
+                    match *innertoken {
+                        "END" => {
+                            children.push(parse_block(tokens.slice(index, innerindex+1)));
+                            if tokens.slice_from(innerindex+1).len() > 0 {
+                                match parse_stmt_list(tokens.slice_from(innerindex+1)) {
+                                    StmtListNode(listofnodes) => {
+                                        children = children.append(listofnodes.as_slice());
+                                    },
+                                    FailureNode => children.push(FailureNode),
+                                    _ => fail!()
+                                }
+                            }
+                            return StmtListNode(children);
+                        },
+                        _ => {
+                            println!("{}", *innertoken);
+                            continue;
+                        }
+                    }
+                }
+                println!("Testmessage");
+                return FailureNode;
+            },
             ";" => {
                 children.push(parse_stmt(tokens.slice(prev_end, index+1)));
                 prev_end = index+1
@@ -37,6 +66,7 @@ fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     if children.len() > 0 {
         return StmtListNode(children);
     }
+    println!("Ending message");
     return FailureNode;
 }
 
