@@ -1,10 +1,11 @@
 #[deriving(Show)]
 #[deriving(Clone)]
 enum AstNode<'a> {
-    ProgramNode,
+    ProgramNode(Vec<AstNode<'a>>),
     BlockNode(Box<AstNode<'a>>),
     StmtListNode(Vec<AstNode<'a>>),
     StmtNode(Box<AstNode<'a>>, Box<AstNode<'a>>),
+    FuncDeclNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>, Box<AstNode<'a>>), // Type, IdentNode, Args, Block
     DeclarNode(&'a str, Box<AstNode<'a>>),
     IdentNode(&'a str),
     ExprNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>), // Operator, Left, Right
@@ -13,17 +14,70 @@ enum AstNode<'a> {
 }
 
 pub fn compile<'a>(tokens: Vec<&'a str>) -> AstNode<'a> {
+    return parse_program(tokens.as_slice());
+}
+
+pub fn parse_program<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    // println!("program");
+    // println!("{}", tokens);
     // for (index, token) in tokens.iter().enumerate() {
     //    println!("{}", token);
     // }
-    parse_stmt_list(tokens.as_slice())
+    // ProgramNode(box parse_stmt_list(tokens.as_slice()))
+    let mut children = Vec::new();
+    if tokens.len() > 0 && tokens[0] == "INT" && tokens[2] == "(" {
+        for (index, token) in tokens.slice_from(3).iter().enumerate() {
+            match *token {
+                "END" => {
+                    children.push(parse_func_decl(tokens.slice_to(index+4)));
+                    if tokens.slice_from(index+4).len() > 0 {
+                        match parse_program(tokens.slice_from(index+4)) {
+                            ProgramNode(listofchildren) => {
+                                children = children.append(listofchildren.as_slice());
+                            },
+                            _ => children.push(FailureNode)
+                        }
+                        return ProgramNode(children);
+                    }
+                },
+                _ => continue
+            }
+        }
+    }
+    return ProgramNode(children);
 }
 
 fn parse_block<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    println!("{}", tokens);
     if tokens[0] == "BEGIN" && tokens[tokens.len()-1] == "END" {
         return BlockNode(box parse_stmt_list(tokens.slice(1,tokens.len()-1)));
     }
     return FailureNode;
+}
+
+fn parse_func_decl<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    // println!("FuncDecl");
+    // println!("{}", tokens);
+    if tokens[0] == "INT" && tokens[2] == "(" {
+        for (index, token) in tokens.slice_from(3).iter().enumerate() {
+            match *token {
+                ")" => {
+                    return FuncDeclNode(
+                                        tokens[0],
+                                        box parse_ident(tokens.slice(1,2)),
+                                        box parse_func_args(tokens.slice(3, index+3)),
+                                        box parse_block(tokens.slice_from(index+4))
+                                        );
+                },
+                _ => continue
+            }
+        }
+    }
+    return FailureNode;
+}
+
+fn parse_func_args<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    FailureNode
 }
 
 fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
@@ -32,28 +86,35 @@ fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     for (index, token) in tokens.iter().enumerate() {
         match *token {
             "BEGIN" => {
-                for (innerindex, innertoken) in tokens.slice_from(index).iter().enumerate() {
+            let mut nestcount = 1u;
+                for (innerindex, innertoken) in tokens.slice_from(index+1).iter().enumerate() {
+                    // println!("{}", tokens.slice_from(index+1));
                     match *innertoken {
+                        "BEGIN" => {
+                            nestcount += 1;
+                        },
                         "END" => {
-                            children.push(parse_block(tokens.slice(index, innerindex+1)));
-                            if tokens.slice_from(innerindex+1).len() > 0 {
-                                match parse_stmt_list(tokens.slice_from(innerindex+1)) {
-                                    StmtListNode(listofnodes) => {
-                                        children = children.append(listofnodes.as_slice());
-                                    },
-                                    FailureNode => children.push(FailureNode),
-                                    _ => fail!()
+                            nestcount -= 1;
+                            if nestcount == 0 {
+                                // println!("{}", tokens.slice(index, innerindex+2));
+                                children.push(parse_block(tokens.slice(index, innerindex+2)));
+                                if tokens.slice_from(innerindex+2).len() > 0 {
+                                    match parse_stmt_list(tokens.slice_from(innerindex+1)) {
+                                        StmtListNode(listofnodes) => {
+                                            children = children.append(listofnodes.as_slice());
+                                        },
+                                        FailureNode => children.push(FailureNode),
+                                        _ => fail!()
+                                    }
                                 }
                             }
                             return StmtListNode(children);
                         },
                         _ => {
-                            println!("{}", *innertoken);
                             continue;
                         }
                     }
                 }
-                println!("Testmessage");
                 return FailureNode;
             },
             ";" => {
@@ -66,7 +127,6 @@ fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     if children.len() > 0 {
         return StmtListNode(children);
     }
-    println!("Ending message");
     return FailureNode;
 }
 
