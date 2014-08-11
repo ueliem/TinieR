@@ -5,7 +5,10 @@ enum AstNode<'a> {
     BlockNode(Box<AstNode<'a>>),
     StmtListNode(Vec<AstNode<'a>>),
     StmtNode(Box<AstNode<'a>>, Box<AstNode<'a>>),
+    ReturnStmtNode(Box<AstNode<'a>>), // Right (right of RETURN)
     FuncDeclNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>, Box<AstNode<'a>>), // Type, IdentNode, Args, Block
+    FuncArgListNode(Vec<AstNode<'a>>),
+    FuncArgNode(&'a str, Box<AstNode<'a>>), // Type, IdentNode
     DeclarNode(&'a str, Box<AstNode<'a>>),
     IdentNode(&'a str),
     ExprNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>), // Operator, Left, Right
@@ -65,7 +68,7 @@ fn parse_func_decl<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                     return FuncDeclNode(
                                         tokens[0],
                                         box parse_ident(tokens.slice(1,2)),
-                                        box parse_func_args(tokens.slice(3, index+3)),
+                                        box parse_func_arg_list(tokens.slice(3, index+3)),
                                         box parse_block(tokens.slice_from(index+4))
                                         );
                 },
@@ -76,8 +79,28 @@ fn parse_func_decl<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     return FailureNode;
 }
 
-fn parse_func_args<'a>(tokens: &[&'a str]) -> AstNode<'a> {
-    FailureNode
+fn parse_func_arg_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    let mut children = Vec::new();
+    if tokens.len() == 2 {
+        children.push(parse_func_arg(tokens.slice_to(2)));
+    }
+    else if tokens.len() > 2 {
+        children.push(parse_func_arg(tokens.slice_to(2)));
+        match parse_func_arg_list(tokens.slice_from(3)) {
+            FuncArgListNode(listofnodes) => {
+                children = children.append(listofnodes.as_slice());
+            },
+            _ => return FailureNode
+        }
+    }
+    return FuncArgListNode(children);
+}
+
+fn parse_func_arg<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    if tokens.len() == 2 {
+        return FuncArgNode(tokens[0], box IdentNode(tokens[1]));
+    }
+    return FailureNode;
 }
 
 fn parse_stmt_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
@@ -143,10 +166,20 @@ fn parse_stmt<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                         _ => continue
                     }
                 }
+                if tokens[0] == "RETURN" {
+                    return parse_return_stmt(tokens);
+                }
                 return parse_decl(tokens);
             },
             _ => continue
         }
+    }
+    return FailureNode;
+}
+
+fn parse_return_stmt<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    if tokens[0] == "RETURN" && tokens[tokens.len()-1] == ";" {
+        return ReturnStmtNode(box parse_expr(tokens.slice(1, tokens.len()-1)))
     }
     return FailureNode;
 }
