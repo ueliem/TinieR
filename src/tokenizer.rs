@@ -29,7 +29,7 @@ pub fn tokenize<'a>(inputstring: &'a str) -> Vec<&'a str> {
             StartState => {
                 match c {
                     ' ' | '\t' | '\n' => {//Whitespace
-                        cur_token_start = i;
+                        // cur_token_start = i;
                         current_state = StartState;
                     },
                     '0'..'9' => {//Digit
@@ -69,14 +69,10 @@ pub fn tokenize<'a>(inputstring: &'a str) -> Vec<&'a str> {
                         current_state = MinusState;
                     },
                     '*' => {
-                        cur_token_end = i;
-                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = StarState;
                     },
                     '/' => {
-                        cur_token_end = i;
-                        tokens.push(inputstring.slice(cur_token_start, cur_token_end));
                         cur_token_start = i;
                         current_state = SlashState;
                     },
