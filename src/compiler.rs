@@ -9,6 +9,9 @@ enum AstNode<'a> {
     FuncDeclNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>, Box<AstNode<'a>>), // Type, IdentNode, Args, Block
     FuncArgListNode(Vec<AstNode<'a>>),
     FuncArgNode(&'a str, Box<AstNode<'a>>), // Type, IdentNode
+    FuncCallNode(Box<AstNode<'a>>, Box<AstNode<'a>>), // IdentNode, Args
+    FuncCallArgListNode(Vec<AstNode<'a>>),
+    FuncCallArgNode(Box<AstNode<'a>>),
     DeclarNode(&'a str, Box<AstNode<'a>>),
     IdentNode(&'a str),
     ExprNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>), // Operator, Left, Right
@@ -51,7 +54,7 @@ pub fn parse_program<'a>(tokens: &[&'a str]) -> AstNode<'a> {
 }
 
 fn parse_block<'a>(tokens: &[&'a str]) -> AstNode<'a> {
-    println!("{}", tokens);
+    // println!("{}", tokens);
     if tokens[0] == "BEGIN" && tokens[tokens.len()-1] == "END" {
         return BlockNode(box parse_stmt_list(tokens.slice(1,tokens.len()-1)));
     }
@@ -215,6 +218,12 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                     box parse_expr(tokens.slice_from(index+1))
                     );
             },
+            ")" => {
+                break;
+            },
+            "(" => {
+                return FailureNode;
+            },
             _ => continue
         }
     }
@@ -226,10 +235,55 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                     box parse_expr(tokens.slice_from(index+1))
                     );
             },
+            ")" => {
+                break;
+            },
+            "(" => {
+                return FailureNode;
+            },
+            _ => continue
+        }
+    }
+    for (index, token) in tokens.iter().enumerate().rev() {
+        match *token {
+            ")" => {
+                let mut parencount = 1u;
+                for (innerindex, innertoken) in tokens.slice_to(index).iter().enumerate().rev() {
+                    match *innertoken {
+                        ")" => {
+                            parencount += 1u;
+                        },
+                        "(" => {
+                            println!("Test 2");
+                            parencount -= 1u;
+                            if parencount == 0u {
+                                println!("{}", tokens.slice(innerindex+1, index));
+                                return parse_expr(tokens.slice(innerindex+1, index));
+                            }
+                        },
+                        _ => continue
+                    }
+                }
+            },
+            "(" => {
+                return FailureNode;
+            },
             _ => continue
         }
     }
     return FailureNode;
+}
+
+fn parse_func_call<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    if tokens[1] == "(" && tokens[tokens.len()-1] == ")" {
+        return FuncCallNode(box parse_ident(tokens.slice(0,1)), 
+                            box parse_func_call_args_list(tokens.slice(1,tokens.len()-2)));
+    }
+    return FailureNode;
+}
+
+fn parse_func_call_args_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
+    FailureNode
 }
 
 fn parse_number(single_token: &[&str]) {
