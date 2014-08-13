@@ -363,7 +363,7 @@ fn parse_func_call_args_list<'a>(tokens: &[&'a str]) -> AstNode<'a> {
 }
 
 fn parse_func_call_arg<'a>(tokens: &[&'a str]) -> AstNode<'a> {
-    FailureNode
+    return parse_expr(tokens);
 }
 
 fn parse_number(single_token: &[&str]) {
