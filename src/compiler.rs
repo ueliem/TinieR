@@ -267,6 +267,9 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                         "(" => {
                             parencount -= 1u;
                             if parencount == 0u {
+                                if tokens.slice_to(innerindex).len() == 1 {
+                                    return parse_func_call(tokens);
+                                }
                                 for (leftindex, lefttoken) in
                                     tokens.slice_to(innerindex).iter().enumerate().rev() {
                                     match *lefttoken {
@@ -314,7 +317,7 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
 fn parse_func_call<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     if tokens[1] == "(" && tokens[tokens.len()-1] == ")" {
         return FuncCallNode(box parse_ident(tokens.slice(0,1)), 
-                            box parse_func_call_args_list(tokens.slice(1,tokens.len()-2)));
+                            box parse_func_call_args_list(tokens.slice(2,tokens.len()-1)));
     }
     return FailureNode;
 }
