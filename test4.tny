@@ -4,7 +4,7 @@ BEGIN
 	z := x*x - y*y;
 	RETURN z; 
 END 
-INT f1() 
+INT MAIN f1() 
 BEGIN
 	INT x;
 	INT y;

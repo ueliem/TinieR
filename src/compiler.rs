@@ -7,7 +7,7 @@ enum AstNode<'a> {
     StmtNode(Box<AstNode<'a>>, Box<AstNode<'a>>),
     ReturnStmtNode(Box<AstNode<'a>>), // Right (right of RETURN)
     WriteStmtNode(Box<AstNode<'a>>),
-    FuncDeclNode(&'a str, Box<AstNode<'a>>, Box<AstNode<'a>>, Box<AstNode<'a>>), // Type, IdentNode, Args, Block
+    FuncDeclNode(bool, &'a str, Box<AstNode<'a>>, Box<AstNode<'a>>, Box<AstNode<'a>>), // Type, IdentNode, Args, Block
     FuncArgListNode(Vec<AstNode<'a>>),
     FuncArgNode(&'a str, Box<AstNode<'a>>), // Type, IdentNode
     FuncCallNode(Box<AstNode<'a>>, Box<AstNode<'a>>), // IdentNode, Args
@@ -51,6 +51,26 @@ pub fn parse_program<'a>(tokens: &[&'a str]) -> AstNode<'a> {
             }
         }
     }
+    else if tokens.len() > 0 && tokens[0] == "INT" && tokens[1] == "MAIN" &&
+        tokens[3] == "(" {
+            for (index, token) in tokens.slice_from(4).iter().enumerate() {
+                match *token {
+                    "END" => {
+                        children.push(parse_func_decl(tokens.slice_to(index+5)));
+                        if tokens.slice_from(index+5).len() > 0 {
+                            match parse_program(tokens.slice_from(index+5)) {
+                                ProgramNode(listofchildren) => {
+                                    children = children.append(listofchildren.as_slice());
+                                },
+                                _ => children.push(FailureNode)
+                            }
+                            return ProgramNode(children);
+                        }
+                    },
+                    _ => continue
+                }
+            }
+    }
     return ProgramNode(children);
 }
 
@@ -65,11 +85,28 @@ fn parse_block<'a>(tokens: &[&'a str]) -> AstNode<'a> {
 fn parse_func_decl<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     // println!("FuncDecl");
     // println!("{}", tokens);
-    if tokens[0] == "INT" && tokens[2] == "(" {
+    if tokens[0] == "INT" && tokens[1] == "MAIN" && tokens[3] == "(" {
+        for (index, token) in tokens.slice_from(4).iter().enumerate() {
+            match *token {
+                ")" => {
+                    return FuncDeclNode(
+                                        true,
+                                        tokens[0], 
+                                        box parse_ident(tokens.slice(2,3)),
+                                        box parse_func_arg_list(tokens.slice(4, index+4)),
+                                        box parse_block(tokens.slice_from(index+5))
+                                        );
+                },
+                _ => continue
+            }
+        }
+    }
+    else if tokens[0] == "INT" && tokens[2] == "(" {
         for (index, token) in tokens.slice_from(3).iter().enumerate() {
             match *token {
                 ")" => {
                     return FuncDeclNode(
+                                        false,
                                         tokens[0],
                                         box parse_ident(tokens.slice(1,2)),
                                         box parse_func_arg_list(tokens.slice(3, index+3)),
@@ -80,6 +117,7 @@ fn parse_func_decl<'a>(tokens: &[&'a str]) -> AstNode<'a> {
             }
         }
     }
+    println!("Failing.");
     return FailureNode;
 }
 
