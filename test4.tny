@@ -1,0 +1,16 @@
+INT f2(INT x, INT y ) 
+BEGIN 
+	INT z;
+	z := x*x - y*y;
+	RETURN z; 
+END 
+INT f1() 
+BEGIN
+	INT x;
+	INT y;
+	INT z;
+	z := 3 + (x+y) * 2;
+	z := f2(x,y) + f2(y,x);
+	WRITE (z); 
+END
+

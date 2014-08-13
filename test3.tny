@@ -1,0 +1,4 @@
+BEGIN
+	INT z;
+	z := x*x - y*y;
+END
