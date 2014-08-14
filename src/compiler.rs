@@ -1,6 +1,6 @@
 #[deriving(Show)]
 #[deriving(Clone)]
-enum AstNode<'a> {
+pub enum AstNode<'a> {
     ProgramNode(Vec<AstNode<'a>>),
     BlockNode(Box<AstNode<'a>>),
     StmtListNode(Vec<AstNode<'a>>),

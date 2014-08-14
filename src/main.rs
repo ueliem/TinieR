@@ -3,6 +3,7 @@ use std::io::File;
 
 mod tokenizer;
 mod compiler;
+mod treetraverser;
 
 fn main() {
     let path = Path::new("test4.tny");
@@ -12,5 +13,6 @@ fn main() {
     	Ok(n) => n,
 	    Err(m) => fail!()
     };
-    println!("{}", compiler::compile(tokenizer::tokenize(std::str::from_utf8(data.as_slice()).unwrap())));
+    // println!("{}", compiler::compile(tokenizer::tokenize(std::str::from_utf8(data.as_slice()).unwrap())));
+    treetraverser::interpret_tree(box compiler::compile(tokenizer::tokenize(std::str::from_utf8(data.as_slice()).unwrap())));
 }
