@@ -8,9 +8,12 @@ pub fn interpret_tree<'a>(syntaxtree: Box<::compiler::AstNode<'a>>) {
     match syntaxtree {
         box ::compiler::ProgramNode(listoffuncdefs) => {
             for def in listoffuncdefs.iter() {
-                println!("{}", def);
+                // println!("{}", def);
                 match def {
                     &::compiler::FuncDeclNode(ismain, typestr, ref ident, ref args, ref block) => {
+                        println!("{}", ident);
+                        let mut funcdefs = Vec::new();
+                        funcdefs.push( (ident, args, block) );
                         continue;
                     },
                     _ => fail!()
