@@ -1,0 +1,3 @@
+[submodule "rustVM"]
+	path = rustVM
+	url = https://github.com/ueliem/rustVM.git

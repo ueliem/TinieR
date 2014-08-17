@@ -1,3 +1,4 @@
+extern crate rustvm;
 use std::str::from_utf8_owned;
 use std::io::File;
 
