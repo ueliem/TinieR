@@ -12,12 +12,14 @@ struct TAC {
     right: TACRight
 }
 
+#[deriving(Show)]
 enum VariableType<String, int> {
     RealVar(String),
     TempVar(String),
     NumberConst(int)
 }
 
+#[deriving(Show)]
 enum ThreeAddressCode {
     SimpleInstr(VariableType<String, int>, TACRight),//Dest, (equals) (expr)
     CallInstr(String),
@@ -26,6 +28,7 @@ enum ThreeAddressCode {
     NopInstr
 }
 
+#[deriving(Show)]
 enum TACRight {
     Addition(VariableType<String, int>, VariableType<String, int>),
     Subtraction(VariableType<String, int>, VariableType<String, int>),
@@ -83,9 +86,29 @@ fn interpret_stmt_list_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempv
                     &::compiler::StmtNode(ref left, ref right) => {
                         interpret_stmt_node(node, tempvarcount);
                     },
+                    &::compiler::DeclarNode(typestr, ref identity) => {
+                        interpret_decl_node(node, tempvarcount);
+                    },
                     _ => continue
                 }
             }
+        },
+        _ => fail!()
+    }
+    Vec::new()
+}
+
+fn interpret_decl_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &uint) -> Vec<ThreeAddressCode> {
+    match syntaxtree {
+        &::compiler::DeclarNode(typestr, ref identity) => {
+            let mut declinstr = match identity {
+                &box ::compiler::IdentNode(idstr) => SimpleInstr(RealVar(idstr.to_owned()), Assignment(NumberConst(0))),
+                _ => fail!()
+            };
+            println!("{}", declinstr);
+            let mut vec = Vec::new();
+            vec.push(declinstr);
+            return vec;
         },
         _ => fail!()
     }
@@ -140,6 +163,15 @@ fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcou
                     let mut vec = Vec::new();
                     vec.push(instr);
                     return vec;
+                },
+                (&box ::compiler::ExprNode(leftop, ref leftexprleft, ref leftexprright),
+                 &box ::compiler::NumberNode(m)) => {
+                },
+                (&box ::compiler::NumberNode(n), 
+                 &box ::compiler::ExprNode(rightop, ref rightexprleft, ref rightexprright)) => {
+                },
+                (&box ::compiler::ExprNode(leftop, ref leftexprleft, ref leftexprright),
+                 &box ::compiler::ExprNode(rightop, ref rightexprleft, ref rightexprright)) => {
                 },
                 _ => fail!()
             }
