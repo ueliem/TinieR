@@ -15,5 +15,8 @@ fn main() {
 	    Err(m) => fail!()
     };
     // println!("{}", compiler::compile(tokenizer::tokenize(std::str::from_utf8(data.as_slice()).unwrap())));
-    treetraverser::interpret_tree(&box compiler::compile(tokenizer::tokenize(std::str::from_utf8(data.as_slice()).unwrap())));
+    let output = treetraverser::interpret_tree(&box compiler::compile(tokenizer::tokenize(std::str::from_utf8(data.as_slice()).unwrap())));
+    for instr in output.iter() {
+        println!("{}", instr);
+    }
 }

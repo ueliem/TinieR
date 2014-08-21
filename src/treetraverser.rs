@@ -1,4 +1,5 @@
 #[deriving(Show)]
+#[deriving(Clone)]
 enum VariableType {
     RealVar(String),
     TempVar(String),
@@ -6,22 +7,25 @@ enum VariableType {
 }
 
 #[deriving(Show)]
+#[deriving(Clone)]
 enum ThreeAddressCode {
     SimpleInstr(VariableType, TACRight),//Dest, (equals) (expr)
-    CallInstr(String),
+    // CallInstr(String),
     Label(String),//name of label. When using goto label or call label, it goes to the instruction
     //following the label
     NopInstr
 }
 
 #[deriving(Show)]
+#[deriving(Clone)]
 enum TACRight {
     Addition(VariableType, VariableType),
     Subtraction(VariableType, VariableType),
     Multiplication(VariableType, VariableType),
     Division(VariableType, VariableType),
     Assignment(VariableType),
-    Write(VariableType)
+    Write(VariableType),
+    CallInstr(String, Vec<String>)
 }
 
 pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<ThreeAddressCode> {
@@ -38,7 +42,7 @@ pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<Thre
                             return interpret_block_node(block, &tempvarcount);
                         }
                         else {
-                            println!("{}", ident);
+                            // println!("{}", ident);
                         }
                         let mut funcdefs = Vec::new();
                         funcdefs.push( (ident, args, block) );
@@ -65,22 +69,23 @@ fn interpret_block_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarco
 fn interpret_stmt_list_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &uint) -> Vec<ThreeAddressCode> {
     match syntaxtree {
         &box ::compiler::StmtListNode(ref listofnodes) => {
+            let mut vec = Vec::new();
             for node in listofnodes.iter() {
-                println!("{}", node);
+                // println!("{}", node);
                 match node {
                     &::compiler::StmtNode(_,_) => {
-                        interpret_stmt_node(node, tempvarcount);
+                        vec = vec.append(interpret_stmt_node(node, tempvarcount).as_slice());
                     },
                     &::compiler::DeclarNode(_,_) => {
-                        interpret_decl_node(node, tempvarcount);
+                        vec = vec.append(interpret_decl_node(node, tempvarcount).as_slice());
                     },
                     _ => continue
                 }
             }
+            return vec;
         },
         _ => fail!()
     }
-    Vec::new()
 }
 
 fn interpret_decl_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &uint) -> Vec<ThreeAddressCode> {
@@ -116,12 +121,28 @@ fn interpret_stmt_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &
 fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &uint) -> Vec<ThreeAddressCode> {
     match syntaxtree {
         &box ::compiler::ExprNode(operation, ref left, ref right) => {
-            println!("{}", operation);
-            interpret_expr_leftside(left, tempvarcount);
+            // println!("{}", operation);
+            match interpret_expr_leftside(left, tempvarcount) {
+                (leftvecinstr, leftoutvar) => {
+                    match interpret_expr_rightside(right, tempvarcount) {
+                        (rightvecinstr, rightoutvar) => {
+                            let comp = match operation {
+                                "+" => Addition(leftoutvar, rightoutvar),
+                                "-" => Subtraction(leftoutvar, rightoutvar),
+                                "*" => Multiplication(leftoutvar, rightoutvar),
+                                "/" => Division(leftoutvar, rightoutvar),
+                                _ => fail!()
+                            };
+                            return rightvecinstr
+                                .append(leftvecinstr.as_slice())
+                                .append_one(SimpleInstr(TempVar("Made up".to_string()), comp));
+                        }
+                    }
+                }
+            }
         },
         _ => fail!()
     }
-    Vec::new()
 }
 
 fn interpret_expr_leftside<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &uint) -> (Vec<ThreeAddressCode>,VariableType) {
@@ -134,8 +155,7 @@ fn interpret_expr_leftside<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempva
             return (interpret_expr_node(syntaxtree, tempvarcount), TempVar("NotReal".to_string()));
         },
         &box ::compiler::FuncCallNode(ref identity, ref funcargs) => {
-            println!("Handling FuncCallNode poorly.");
-            fail!();
+            return interpret_func_call_node(syntaxtree, tempvarcount);
         },
         &box ::compiler::IdentNode(identity) => {
             return (Vec::new(), RealVar(identity.to_string()));
@@ -154,12 +174,32 @@ fn interpret_expr_rightside<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempv
             return (interpret_expr_node(syntaxtree, tempvarcount), TempVar("NotReal".to_string()));
         },
         &box ::compiler::FuncCallNode(ref identity, ref funcargs) => {
-            println!("Handling FuncCallNode poorly.");
-            fail!();
+            return interpret_func_call_node(syntaxtree, tempvarcount);
         },
         &box ::compiler::IdentNode(identity) => {
             return (Vec::new(), RealVar(identity.to_string()));
         },
         _ => fail!()
     }
+}
+
+fn interpret_func_call_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &uint) -> (Vec<ThreeAddressCode>,VariableType) {
+    match syntaxtree {
+        &box ::compiler::FuncCallNode(ref identity, ref funcargs) => {
+            let mut vec = Vec::new();
+            match interpret_func_arg_list_node(funcargs, tempvarcount) {
+                (thac, arglist) => {
+                    vec.push(SimpleInstr(TempVar("t".to_string()), CallInstr(identity.to_string(),
+                                                                             arglist
+                                                                             )));
+                    return (vec, TempVar("NotReal".to_string()));
+                }
+            }
+        },
+        _ => fail!()
+    }
+}
+
+fn interpret_func_arg_list_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &uint) -> (Vec<ThreeAddressCode>,Vec<String>) {
+    (Vec::new(), Vec::new())
 }
