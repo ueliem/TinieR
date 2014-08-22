@@ -209,10 +209,11 @@ fn interpret_func_call_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempv
             let mut vec = Vec::new();
             match interpret_func_arg_list_node(funcargs, tempvarcount) {
                 (thac, arglist) => {
-                    vec.push(SimpleInstr(generate_tempvar(tempvarcount), CallInstr(identity.to_string(),
+                    let outvar = generate_tempvar(tempvarcount);
+                    vec.push(SimpleInstr(outvar.clone(), CallInstr(identity.to_string(),
                                                                              arglist
                                                                              )));
-                    return (vec, generate_tempvar(tempvarcount));
+                    return (vec, outvar.clone());
                 }
             }
         },
