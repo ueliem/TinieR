@@ -71,7 +71,7 @@ fn interpret_stmt_list_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempv
         &box ::compiler::StmtListNode(ref listofnodes) => {
             let mut vec = Vec::new();
             for node in listofnodes.iter() {
-                // println!("{}", node);
+                println!("{}", node);
                 match node {
                     &::compiler::StmtNode(_,_) => {
                         vec = vec.append(interpret_stmt_node(node, tempvarcount).as_slice());
@@ -124,10 +124,11 @@ fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcou
     match syntaxtree {
         &box ::compiler::ExprNode(operation, ref left, ref right) => {
             // println!("{}", operation);
-            match interpret_expr_rightside(right, tempvarcount) {
-                (rightvecinstr, rightoutvar) => {
-                    match interpret_expr_leftside(left, tempvarcount) {
-                        (leftvecinstr, leftoutvar) => {
+            println!("{}", syntaxtree);
+            match interpret_expr_leftside(left, tempvarcount) {
+                (leftvecinstr, leftoutvar) => {
+                    match interpret_expr_rightside(right, tempvarcount) {
+                        (rightvecinstr, rightoutvar) => {
                             let comp = match operation {
                                 "+" => Addition(leftoutvar, rightoutvar),
                                 "-" => Subtraction(leftoutvar, rightoutvar),
@@ -136,15 +137,12 @@ fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcou
                                 _ => fail!()
                             };
                             let outvar = generate_tempvar(tempvarcount);
-                            println!("Left {}", leftvecinstr);
-                            println!("Middle {}", SimpleInstr(outvar.clone(), comp.clone()));
-                            println!("Right {}", rightvecinstr);
+                            // println!("Left {}", leftvecinstr);
+                            // println!("Middle {}", SimpleInstr(outvar.clone(), comp.clone()));
+                            // println!("Right {}", rightvecinstr);
                             return (leftvecinstr
-                                .append(rightvecinstr.as_slice())
-                                .append_one(SimpleInstr(outvar.clone(), comp)), Some(outvar.clone()));
-                            // return (rightvecinstr.append_one(SimpleInstr(outvar.clone(), comp))
-                            //                     .append(leftvecinstr.as_slice()),
-                            //                     Some(outvar.clone()));
+                                    .append(rightvecinstr.as_slice())
+                                    .append_one(SimpleInstr(outvar.clone(), comp)), Some(outvar.clone()));
                         }
                     }
                 }

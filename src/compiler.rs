@@ -91,7 +91,7 @@ fn parse_func_decl<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                 ")" => {
                     return FuncDeclNode(
                                         true,
-                                        tokens[0], 
+                                        tokens[0],
                                         box parse_ident(tokens.slice(2,3)),
                                         box parse_func_arg_list(tokens.slice(4, index+4)),
                                         box parse_block(tokens.slice_from(index+5))
@@ -230,7 +230,7 @@ fn parse_return_stmt<'a>(tokens: &[&'a str]) -> AstNode<'a> {
 }
 
 fn parse_write_stmt<'a>(tokens: &[&'a str]) -> AstNode<'a> {
-    if tokens[0] == "WRITE" && tokens[tokens.len()-1] == ";" && 
+    if tokens[0] == "WRITE" && tokens[tokens.len()-1] == ";" &&
         tokens[1] == "(" && tokens[tokens.len()-2] == ")" {
             return WriteStmtNode(box parse_func_call_args_list(tokens.slice(2, tokens.len()-2)));
     }
@@ -259,36 +259,44 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
             None => return IdentNode(tokens[0])
         }
     }
+    let mut parencount = 0u;
     for (index, token) in tokens.iter().enumerate().rev() {
     	match *token {
             "+" | "-" => {
-                return ExprNode(*token, 
-                    box parse_expr(tokens.slice_to(index)),
-                    box parse_expr(tokens.slice_from(index+1))
-                    );
+                if parencount == 0 {
+                    return ExprNode(*token,
+                        box parse_expr(tokens.slice_to(index)),
+                        box parse_expr(tokens.slice_from(index+1))
+                        );
+                }
             },
             ")" => {
-                break;
+                parencount += 1;
             },
             "(" => {
-                return FailureNode;
+                parencount -= 1;
+                // return FailureNode;
             },
             _ => continue
         }
     }
+    parencount = 0u;
     for (index, token) in tokens.iter().enumerate().rev() {
     	match *token {
             "*" | "/" => {
-                return ExprNode(*token, 
-                    box parse_expr(tokens.slice_to(index)),
-                    box parse_expr(tokens.slice_from(index+1))
-                    );
+                if parencount == 0 {
+                    return ExprNode(*token,
+                        box parse_expr(tokens.slice_to(index)),
+                        box parse_expr(tokens.slice_from(index+1))
+                        );
+                }
             },
             ")" => {
-                break;
+                parencount += 1;
             },
             "(" => {
-                return FailureNode;
+                parencount -= 1;
+                // return FailureNode;
             },
             _ => continue
         }
@@ -312,7 +320,7 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                                     tokens.slice_to(innerindex).iter().enumerate().rev() {
                                     match *lefttoken {
                                         "+" | "-" => {
-                                            return ExprNode(*lefttoken, 
+                                            return ExprNode(*lefttoken,
                                                             box
                                                             parse_expr(tokens.slice_to(leftindex)),
                                                             box
@@ -326,7 +334,7 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
                                     tokens.slice_to(innerindex).iter().enumerate().rev() {
                                     match *lefttoken {
                                         "*" | "/" => {
-                                            return ExprNode(*lefttoken, 
+                                            return ExprNode(*lefttoken,
                                                             box
                                                             parse_expr(tokens.slice_to(leftindex)),
                                                             box
@@ -354,7 +362,7 @@ fn parse_expr<'a>(tokens: &[&'a str]) -> AstNode<'a> {
 
 fn parse_func_call<'a>(tokens: &[&'a str]) -> AstNode<'a> {
     if tokens[1] == "(" && tokens[tokens.len()-1] == ")" {
-        return FuncCallNode(box parse_ident(tokens.slice(0,1)), 
+        return FuncCallNode(box parse_ident(tokens.slice(0,1)),
                             box parse_func_call_args_list(tokens.slice(2,tokens.len()-1)));
     }
     return FailureNode;
