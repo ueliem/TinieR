@@ -108,8 +108,8 @@ fn interpret_stmt_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &
     match syntaxtree {
         &::compiler::StmtNode(ref ident, ref expr) => {
             match ident {
-                &box ::compiler::IdentNode(_) => {
-                    match interpret_expr_node(expr, tempvarcount) {
+                &box ::compiler::IdentNode(identity) => {
+                    match interpret_expr_node(expr, Some(RealVar(identity.to_string())), tempvarcount) {
                         (tacode, somevar) => return tacode,
                     }
                 },
@@ -120,36 +120,40 @@ fn interpret_stmt_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &
     }
 }
 
-fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &mut uint) -> (Vec<ThreeAddressCode>,Option<VariableType>) {
-    match syntaxtree {
-        &box ::compiler::ExprNode(operation, ref left, ref right) => {
-            // println!("{}", operation);
-            println!("{}", syntaxtree);
-            match interpret_expr_leftside(left, tempvarcount) {
-                (leftvecinstr, leftoutvar) => {
-                    match interpret_expr_rightside(right, tempvarcount) {
-                        (rightvecinstr, rightoutvar) => {
-                            let comp = match operation {
-                                "+" => Addition(leftoutvar, rightoutvar),
-                                "-" => Subtraction(leftoutvar, rightoutvar),
-                                "*" => Multiplication(leftoutvar, rightoutvar),
-                                "/" => Division(leftoutvar, rightoutvar),
-                                _ => fail!()
-                            };
-                            let outvar = generate_tempvar(tempvarcount);
-                            // println!("Left {}", leftvecinstr);
-                            // println!("Middle {}", SimpleInstr(outvar.clone(), comp.clone()));
-                            // println!("Right {}", rightvecinstr);
-                            return (leftvecinstr
-                                    .append(rightvecinstr.as_slice())
-                                    .append_one(SimpleInstr(outvar.clone(), comp)), Some(outvar.clone()));
+fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, realout: Option<VariableType>, tempvarcount: &mut uint)
+    -> (Vec<ThreeAddressCode>,Option<VariableType>) {
+        match syntaxtree {
+            &box ::compiler::ExprNode(operation, ref left, ref right) => {
+                // println!("{}", operation);
+                println!("{}", syntaxtree);
+                match interpret_expr_leftside(left, tempvarcount) {
+                    (leftvecinstr, leftoutvar) => {
+                        match interpret_expr_rightside(right, tempvarcount) {
+                            (rightvecinstr, rightoutvar) => {
+                                let comp = match operation {
+                                    "+" => Addition(leftoutvar, rightoutvar),
+                                    "-" => Subtraction(leftoutvar, rightoutvar),
+                                    "*" => Multiplication(leftoutvar, rightoutvar),
+                                    "/" => Division(leftoutvar, rightoutvar),
+                                    _ => fail!()
+                                };
+                                let outvar = match realout {
+                                    Some(variablename) => variablename,
+                                    None => generate_tempvar(tempvarcount)
+                                };
+                                // println!("Left {}", leftvecinstr);
+                                // println!("Middle {}", SimpleInstr(outvar.clone(), comp.clone()));
+                                // println!("Right {}", rightvecinstr);
+                                return (leftvecinstr
+                                        .append(rightvecinstr.as_slice())
+                                        .append_one(SimpleInstr(outvar.clone(), comp)), Some(outvar.clone()));
+                            }
                         }
                     }
                 }
-            }
-        },
-        _ => fail!()
-    }
+            },
+            _ => fail!()
+        }
 }
 
 fn interpret_expr_leftside<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &mut uint) -> (Vec<ThreeAddressCode>,VariableType) {
@@ -159,7 +163,7 @@ fn interpret_expr_leftside<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempva
             return (Vec::new(), NumberConst(n_as_int));
         },
         &box ::compiler::ExprNode(_,_,_) => {
-            match interpret_expr_node(syntaxtree, tempvarcount) {
+            match interpret_expr_node(syntaxtree, None, tempvarcount) {
                 tacode => {
                     match tacode {
                         (innercode, innerovar) => return (innercode, innerovar.unwrap()),
@@ -184,7 +188,7 @@ fn interpret_expr_rightside<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempv
             return (Vec::new(), NumberConst(n_as_int));
         },
         &box ::compiler::ExprNode(_,_,_) => {
-            match interpret_expr_node(syntaxtree, tempvarcount) {
+            match interpret_expr_node(syntaxtree, None, tempvarcount) {
                 tacode => {
                     match tacode {
                         (innercode, innerovar) => return (innercode, innerovar.unwrap()),
