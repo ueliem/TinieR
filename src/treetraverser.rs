@@ -38,15 +38,17 @@ pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<Thre
                 // println!("{}", def);
                 match def {
                     &::compiler::FuncDeclNode(ismain, typestr, ref ident, ref args, ref block) => {
-                        if ismain {
+                        /*if ismain {
                             return interpret_block_node(block, &mut tempvarcount);
                         }
                         else {
                             // println!("{}", ident);
                         }
                         let mut funcdefs = Vec::new();
-                        funcdefs.push( (ident, args, block) );
-                        continue;
+                        funcdefs.push( (ident, args, block) );*/
+                        if ismain {
+                            return interpret_func_decl_node(def, &mut tempvarcount);
+                        }
                     },
                     _ => fail!()
                 }
@@ -55,6 +57,26 @@ pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<Thre
         _ => fail!()
     }
     Vec::new()
+}
+
+fn interpret_func_decl_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &mut uint) -> Vec<ThreeAddressCode> {
+    match syntaxtree {
+        &::compiler::FuncDeclNode(ismain, typestr, ref ident, ref args, ref block) => {
+            if ismain {
+                match ident {
+                    &box ::compiler::IdentNode(identity) => {
+                        return Vec::new().append_one(Label(identity.to_string()))
+                        .append(interpret_block_node(block, tempvarcount).as_slice());
+                    },
+                    _ => fail!()
+                }
+            }
+            else {
+                return Vec::new();
+            }
+        },
+        _ => fail!()
+    }
 }
 
 fn interpret_block_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempvarcount: &mut uint) -> Vec<ThreeAddressCode> {
