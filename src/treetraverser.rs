@@ -13,6 +13,7 @@ enum ThreeAddressCode {
     // CallInstr(String),
     Label(String),//name of label. When using goto label or call label, it goes to the instruction
     //following the label
+    Write(Vec<VariableType>),
     NopInstr
 }
 
@@ -24,7 +25,6 @@ enum TACRight {
     Multiplication(VariableType, VariableType),
     Division(VariableType, VariableType),
     Assignment(VariableType),
-    Write(VariableType),
     CallInstr(String, Vec<String>)
 }
 
@@ -34,6 +34,7 @@ pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<Thre
     let mut tempvarcount: uint = 0;
     match syntaxtree {
         &box ::compiler::ProgramNode(ref listoffuncdefs) => {
+            let mut vec = Vec::new();
             for def in listoffuncdefs.iter() {
                 // println!("{}", def);
                 match def {
@@ -47,12 +48,13 @@ pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<Thre
                         let mut funcdefs = Vec::new();
                         funcdefs.push( (ident, args, block) );*/
                         if ismain {
-                            return interpret_func_decl_node(def, &mut tempvarcount);
+                            vec = vec.append(interpret_func_decl_node(def, &mut tempvarcount).as_slice());
                         }
                     },
                     _ => fail!()
                 }
             }
+            return vec;
         },
         _ => fail!()
     }
@@ -101,6 +103,9 @@ fn interpret_stmt_list_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempv
                     &::compiler::DeclarNode(_,_) => {
                         vec = vec.append(interpret_decl_node(node, tempvarcount).as_slice());
                     },
+                    &::compiler::WriteStmtNode(_) => {
+                        vec = vec.append(interpret_write_stmt_node(node, tempvarcount).as_slice());
+                    },
                     _ => continue
                 }
             }
@@ -137,6 +142,15 @@ fn interpret_stmt_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &
                 },
                 _ => fail!()
             }
+        },
+        _ => fail!()
+    }
+}
+
+fn interpret_write_stmt_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &mut uint) -> Vec<ThreeAddressCode> {
+    match syntaxtree {
+        &::compiler::WriteStmtNode(ref argslist) => {
+            return Vec::new().append_one(Write(Vec::new()));
         },
         _ => fail!()
     }
