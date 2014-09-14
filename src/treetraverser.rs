@@ -14,6 +14,7 @@ enum ThreeAddressCode {
     Label(String),//name of label. When using goto label or call label, it goes to the instruction
     //following the label
     Write(Vec<VariableType>),
+    Return(VariableType),
     NopInstr
 }
 
@@ -47,7 +48,8 @@ pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<Thre
                         }
                         let mut funcdefs = Vec::new();
                         funcdefs.push( (ident, args, block) );*/
-                        if ismain {
+                        println!("Func");
+                        if ismain || true {
                             vec = vec.append(interpret_func_decl_node(def, &mut tempvarcount).as_slice());
                         }
                     },
@@ -64,7 +66,7 @@ pub fn interpret_tree<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>) -> Vec<Thre
 fn interpret_func_decl_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &mut uint) -> Vec<ThreeAddressCode> {
     match syntaxtree {
         &::compiler::FuncDeclNode(ismain, typestr, ref ident, ref args, ref block) => {
-            if ismain {
+            if ismain || true {
                 match ident {
                     &box ::compiler::IdentNode(identity) => {
                         return Vec::new().append_one(Label(identity.to_string()))
@@ -105,6 +107,10 @@ fn interpret_stmt_list_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, tempv
                     },
                     &::compiler::WriteStmtNode(_) => {
                         vec = vec.append(interpret_write_stmt_node(node, tempvarcount).as_slice());
+                    },
+                    &::compiler::ReturnStmtNode(_) => {
+                        vec = vec.append(interpret_return_stmt_node(node,
+                                                                    tempvarcount).as_slice());
                     },
                     _ => continue
                 }
@@ -156,6 +162,27 @@ fn interpret_write_stmt_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarco
     }
 }
 
+fn interpret_return_stmt_node<'a>(syntaxtree: &::compiler::AstNode<'a>, tempvarcount: &mut uint) -> Vec<ThreeAddressCode> {
+    match syntaxtree {
+        &::compiler::ReturnStmtNode(ref argslist) => {
+            match argslist {
+                &box ::compiler::ExprNode(_,_,_) => {
+                    match interpret_expr_node(argslist, None, tempvarcount) {
+                        (tac, outvar) => {
+                            return tac.append_one(Return(NumberConst(0)));
+                        }
+                    }
+                },
+                &box ::compiler::IdentNode(identity) => {
+                    return Vec::new().append_one(Return(RealVar(identity.to_string())));
+                },
+                _ => fail!()
+            }
+        },
+        _ => fail!()
+    }
+}
+
 fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, realout: Option<VariableType>, tempvarcount: &mut uint)
     -> (Vec<ThreeAddressCode>,Option<VariableType>) {
         match syntaxtree {
@@ -187,6 +214,9 @@ fn interpret_expr_node<'a>(syntaxtree: &Box<::compiler::AstNode<'a>>, realout: O
                         }
                     }
                 }
+            },
+            &box ::compiler::IdentNode(identity) => {
+                fail!();
             },
             _ => fail!()
         }
